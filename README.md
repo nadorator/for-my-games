@@ -69,6 +69,13 @@ podman-compose -f docker-compose.yml up -d
 podman exec -it api.for-my.games /bin/bash
 ```
 
+### Initialize composer and generate vendors
+```bash
+rm /opt/formygames/src/composer.lock
+rm -Rf /opt/formygames/src/vendor/*
+cd /data && COMPOSER=/opt/formygames/src/composer.json composer install --working-dir=/data --no-progress
+```
+
 ## 🔍 Verifying Installation
 After starting the containers, you can verify that everything is working correctly:
 
