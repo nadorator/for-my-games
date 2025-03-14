@@ -94,6 +94,7 @@ After starting the containers, you can verify that everything is working correct
 You can also verify the other domains:
 - API: `http://api.for-my.games:8909`
 - Admin: `http://admin.for-my.games:8909`
+- PhpMyAdmin: http://phpmyadmin.for-my.games:8909
 
 ## 🛠 Troubleshooting
 

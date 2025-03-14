@@ -1,4 +1,9 @@
 #!/bin/bash
+cd /opt/formygames/src
+cat <<EOF | mysql
+ALTER USER 'root'@'localhost' IDENTIFIED BY '$(grep MYSQL_ROOT_PASSWORD .env | cut -d'=' -f2)';
+FLUSH PRIVILEGES;
+EOF
 add-apt-repository ppa:phpmyadmin/ppa
 apt-get -y install phpmyadmin
 mkdir /opt/phpmyadmin
