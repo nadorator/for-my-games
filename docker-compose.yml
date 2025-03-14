@@ -1,0 +1,30 @@
+services:
+  php:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: formygames:8.2
+    container_name: api.for-my.games
+    deploy:
+      resources:
+        limits:
+          memory: 6G
+        reservations:
+          memory: 5G
+    memswap_limit: 6G
+    ports:
+      - 8909:80
+    volumes:
+      - db-data:/var/lib/mysql
+      - .:/opt/formygames/src
+    environment:
+      ENVIRONMENT_TYPE: dev
+      PHP_VERSION: 8.2
+    extra_hosts:
+      - host.docker.internal:host-gateway
+      - www.for-my.games:127.0.0.1
+      - phpmyadmin.for-my.games:127.0.0.1
+    working_dir: /data
+volumes:
+  db-data:
+
