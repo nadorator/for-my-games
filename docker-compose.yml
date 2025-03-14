@@ -1,30 +1,36 @@
+# optimised docker-compose.yml
+version: '3.8'
+
 services:
-  php:
+  formygames:
     build:
       context: .
-      dockerfile: Dockerfile
-    image: formygames:8.2
+      args:
+        PHP_VERSION: 8.2
+        PHALCON_VERSION: 5.8.0
+        MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+        ENVIRONMENT: ${ENVIRONMENT:-development}
+    image: api.for-my.games:latest
     container_name: api.for-my.games
-    deploy:
-      resources:
-        limits:
-          memory: 6G
-        reservations:
-          memory: 5G
-    memswap_limit: 6G
     ports:
-      - 8909:80
+      - "8909:8909"
     volumes:
-      - db-data:/var/lib/mysql
-      - .:/opt/formygames/src
+      - .:/opt/formygames/src:z
+      - composer-cache:/root/.composer/cache:z
     environment:
-      ENVIRONMENT_TYPE: dev
-      PHP_VERSION: 8.2
-    extra_hosts:
-      - host.docker.internal:host-gateway
-      - www.for-my.games:127.0.0.1
-      - phpmyadmin.for-my.games:127.0.0.1
-    working_dir: /data
-volumes:
-  db-data:
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - ENVIRONMENT=${ENVIRONMENT:-development}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8909/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
+volumes:
+  composer-cache:
+    driver: local
+
+networks:
+  default:
+    driver: bridge

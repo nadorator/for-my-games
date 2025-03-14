@@ -32,6 +32,7 @@ Add these lines:
 127.0.0.1 www.for-my.games 
 127.0.0.1 api.for-my.games 
 127.0.0.1 admin.for-my.games
+127.0.0.1 phpmyadmin.for-my.games
 
 Save with `CTRL + X`, then `Y`, then `Enter`
 
@@ -43,6 +44,7 @@ Add these lines:
 127.0.0.1 www.for-my.games
 127.0.0.1 api.for-my.games
 127.0.0.1 admin.for-my.games
+127.0.0.1 phpmyadmin.for-my.games
 Save with `CTRL + X`, then `Y`, then `Enter`
 
 #### Windows
@@ -52,6 +54,7 @@ Save with `CTRL + X`, then `Y`, then `Enter`
    127.0.0.1 www.for-my.games
    127.0.0.1 api.for-my.games
    127.0.0.1 admin.for-my.games
+   127.0.0.1 phpmyadmin.for-my.games
 4. Save the file
 
 ### File Structure
@@ -74,6 +77,11 @@ podman exec -it api.for-my.games /bin/bash
 rm /opt/formygames/src/composer.lock
 rm -Rf /opt/formygames/src/vendor/*
 cd /data && COMPOSER=/opt/formygames/src/composer.json composer install --working-dir=/data --no-progress
+```
+
+### Install phpmyadmin manually from bash
+```bash
+/opt/formygames/src/docker/phpmyadmin.sh
 ```
 
 ## 🔍 Verifying Installation

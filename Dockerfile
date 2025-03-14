@@ -1,62 +1,97 @@
 FROM debian:bookworm-20241223
-LABEL maintainer="nhmerouane@hotmail.com"
-LABEL version="0.1"
-LABEL description="For My Games podman dockerfile"
-ARG DEBIAN_FRONTEND=noninteractive
-ENV TZ="Europe/Paris"
-RUN apt-get update && apt-get -y upgrade && apt-get update
-RUN apt-get -y install systemd systemd-sysv locales locales-all nano vim iproute2 iputils-ping telnet apt-utils
-RUN apt-get -y install wget imagemagick webp vim lsb-release gcc make automake autoconf locate git curl gcc make
-RUN apt-get -y install rsyslog
-RUN apt-get -y install ntp net-tools
-RUN apt-get -y install apache2 libapache2-mod-php
-RUN apt-get -y install php composer php-zip php-json php-mbstring php-bcmath php-intl  php-common php-mysql php-cli php-curl php-xml php-xmlrpc php-soap
-RUN apt-get -y install php-ldap openssl php8.2-sqlite sqlite3 php-imagick php-xdebug php-gd php-json composer
-RUN apt-get -y install php-dev libpcre3-dev build-essential
-RUN apt-get -y install postfix
-VOLUME ["/opt/formygames/"]
-VOLUME ["/var/lib/mysql"]
-RUN a2enmod rewrite
-RUN a2enmod headers
-RUN rm -f /etc/php/8.2/apache2/conf.d/20-json.ini
-RUN rm -f /etc/php/8.2/apache2/php.ini
-RUN rm -f /etc/php/8.2/cli/php.ini
-RUN ln -s /opt/formygames/src/vm/conf/php/php8.2.ini /etc/php/8.2/apache2/php.ini
-RUN ln -s /opt/formygames/src/vm/conf/php/cli8.2.ini /etc/php/8.2/cli/php.ini
-RUN rm /etc/php/8.2/apache2/conf.d/20-xdebug.ini
-RUN ln -s /opt/formygames/src/vm/conf/php/xdebug.ini /etc/php/8.2/apache2/conf.d/20-xdebug.ini
-RUN rm /etc/postfix/main.cf
-RUN ln -s /opt/formygames/src/vm/conf/main.cf /etc/postfix/main.cf
-RUN apt-get -y install curl software-properties-common dirmngr
-RUN pecl channel-update pecl.php.net
-RUN pecl install phalcon
-RUN apt-get update && apt-get -y install mariadb-server mariadb-client
-RUN chown -R mysql:mysql /var/lib/mysql
-RUN mysql_install_db --user=mysql --ldata=/var/lib/mysql/
-RUN mkdir -p /data
-RUN cd /data
-RUN ln -s /opt/formygames/src/public /data/public
-RUN ln -s /opt/formygames/src/api /data/api
-RUN ln -s /opt/formygames/src/vendor /data/vendor
-RUN ln -s /opt/formygames/src/app /data/bin
-RUN ln -s /opt/formygames/src/composer.json /data/composer.json
-RUN ln -s /opt/formygames/src/composer.lock /data/composer.lock
-RUN ln -s /opt/formygames/src/vm/conf/apache2/000-default82.conf /etc/apache2/sites-enabled/100-default.conf
-RUN sed -i 's/APACHE_RUN_\\(USER\\|GROUP\\)=www-data/APACHE_RUN_\\1=podman/' /etc/apache2/envvars
-RUN rm /etc/apache2/sites-enabled/000-default.conf
-RUN ln -s /usr/bin/convert /usr/local/bin/convert
-RUN echo Listen 8909 | tee -a /etc/apache2/ports.conf
-RUN apt-get -y install phpmyadmin
-RUN echo 'phpmyadmin phpmyadmin/dbconfig-install boolean false' | debconf-set-selections
-RUN echo 'phpmyadmin phpmyadmin/reconfigure-webserver multiselect apache2' | debconf-set-selections
-RUN echo '#!/bin/bash' | tee -a /bin/startup
-RUN echo 'mkdir -p /opt/formygames/src/vendor' | tee -a /bin/startup
-RUN echo '/etc/init.d/mariadb start' | tee -a /bin/startup
-RUN echo '/etc/init.d/apache2 start' | tee -a /bin/startup
-RUN echo '/etc/init.d/rsyslog start' | tee -a /bin/startup
-RUN echo '/etc/init.d/postfix start' | tee -a /bin/startup
-RUN echo 'chmod 755 /bin/prepare' | tee -a /bin/startup
-RUN chmod 755 /bin/startup
-RUN ln -s /opt/formygames/src/prepare.sh /bin/prepare
+
+ARG PHP_VERSION=8.2
+ARG PHALCON_VERSION=5.8.0
+ARG MYSQL_ROOT_PASSWORD
+ARG ENVIRONMENT=development
+
+RUN set -ex \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends \
+        git \
+        curl \
+        gnupg2 \
+        ca-certificates \
+        apt-transport-https \
+        software-properties-common \
+        lsb-release \
+        wget \
+        vim \
+    && curl -sSLo /usr/share/keyrings/deb.sury.org-php.gpg https://packages.sury.org/php/apt.gpg \
+    && echo "deb [signed-by=/usr/share/keyrings/deb.sury.org-php.gpg] https://packages.sury.org/php/ $(lsb_release -sc) main" > /etc/apt/sources.list.d/php.list \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends \
+        php${PHP_VERSION} \
+        php${PHP_VERSION}-cli \
+        php${PHP_VERSION}-common \
+        php${PHP_VERSION}-curl \
+        php${PHP_VERSION}-mbstring \
+        php${PHP_VERSION}-mysql \
+        php${PHP_VERSION}-xml \
+        php${PHP_VERSION}-zip \
+        php${PHP_VERSION}-bcmath \
+        php${PHP_VERSION}-gd \
+        php${PHP_VERSION}-dev \
+        php${PHP_VERSION}-soap \
+        php${PHP_VERSION}-intl \
+        php${PHP_VERSION}-xdebug \
+        php${PHP_VERSION}-imagick \
+        imagemagick \
+        libmagickwand-dev \
+        apache2 \
+        mariadb-server \
+        mariadb-client \
+        build-essential \
+        libpcre3-dev \
+    && chown -R mysql:mysql /var/lib/mysql \
+    && cd /tmp \
+    && curl -LO https://github.com/phalcon/cphalcon/archive/v${PHALCON_VERSION}.tar.gz \
+    && tar xzf v${PHALCON_VERSION}.tar.gz \
+    && cd cphalcon-${PHALCON_VERSION}/build \
+    && ./install \
+    && echo "extension=phalcon.so" > /etc/php/${PHP_VERSION}/mods-available/phalcon.ini \
+    && phpenmod phalcon \
+    && phpenmod soap \
+    && phpenmod imagick \
+    && phpenmod intl \
+    && phpenmod xdebug \
+    && a2enmod rewrite \
+    && curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* \
+    && mysql_install_db --user=mysql --ldata=/var/lib/mysql/ \
+    && mkdir -p /data \
+    && ln -s /opt/formygames/src/public /data/public \
+    && ln -s /opt/formygames/src/api /data/api \
+    && ln -s /opt/formygames/src/vendor /data/vendor \
+    && ln -s /opt/formygames/src/app /data/bin \
+    && ln -s /opt/formygames/src/composer.json /data/composer.json \
+    && ln -s /opt/formygames/src/composer.lock /data/composer.lock \
+    && ln -s /usr/bin/convert /usr/local/bin/convert \
+    && echo Listen 8909 | tee -a /etc/apache2/ports.conf \
+    && chmod +x /opt/formygames/src/docker/phpmyadmin.sh
+
+COPY docker/apache.conf /etc/apache2/sites-available/000-default.conf
+
+WORKDIR /opt/formygames/src
+COPY . .
+
+# Create entrypoint script
+RUN echo '#!/bin/bash\n\
+cp /usr/bin/convert /usr/local/bin/convert\n\
+# Start MariaDB\n\
+service mariadb start\n\
+\n\
+# Wait for MariaDB to be ready\n\
+while ! mysqladmin ping -h localhost --silent; do\n\
+    sleep 1\n\
+done\n\
+\n\
+# Start Apache\n\
+apache2ctl -D FOREGROUND' > /usr/local/bin/entrypoint.sh
+
+RUN chmod +x /usr/local/bin/entrypoint.sh
+
 EXPOSE 8909
-CMD [ "/sbin/init" ]
+
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
