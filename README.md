@@ -18,7 +18,7 @@ This project provides a ready-to-use Podman configuration for application develo
 The project uses Podman as a Docker alternative. Default configuration includes:
 - PHP 8.2
 - Phalcon 5.8
-- Nginx web server
+- Apache 2 web server
 - MariaDB (latest stable version)
 
 ### Hosts Configuration
