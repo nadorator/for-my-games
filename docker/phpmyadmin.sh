@@ -5,7 +5,8 @@ ALTER USER 'root'@'localhost' IDENTIFIED BY '$(grep MYSQL_ROOT_PASSWORD .env | c
 FLUSH PRIVILEGES;
 EOF
 add-apt-repository ppa:phpmyadmin/ppa
-apt-get -y install phpmyadmin
+apt-get update
+apt-get -y install wget phpmyadmin
 mkdir /opt/phpmyadmin
 mkdir /opt/phpmyadmin/install
 wget -P /opt/phpmyadmin https://www.phpmyadmin.net/downloads/phpMyAdmin-latest-all-languages.tar.gz
@@ -18,4 +19,5 @@ cp -R /opt/phpmyadmin/install/vendor /usr/share/phpmyadmin/vendor
 cp /usr/share/phpmyadmin/config.sample.inc.php /usr/share/phpmyadmin/config.inc.php
 echo 'phpmyadmin phpmyadmin/dbconfig-install boolean false' | debconf-set-selections
 echo 'phpmyadmin phpmyadmin/reconfigure-webserver multiselect apache2' | debconf-set-selections
+cp /opt/formygames/src/docker/apache.conf /etc/apache2/sites-available/000-default.conf
 /etc/init.d/apache2 reload
