@@ -36,6 +36,7 @@ RUN set -ex \
         php${PHP_VERSION}-intl \
         php${PHP_VERSION}-xdebug \
         php${PHP_VERSION}-imagick \
+        php8.4-dom \
         imagemagick \
         libmagickwand-dev \
         apache2 \
