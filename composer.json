@@ -36,7 +36,9 @@
     "ext-openssl": "*",
     "ext-posix": "*",
     "ext-iconv": "*",
-    "orhanerday/open-ai": "^5.0"
+    "orhanerday/open-ai": "^5.0",
+    "firebase/php-jwt": "^6.0",
+    "ramsey/uuid": "^4.2"
   },
   "require-dev": {
     "mockery/mockery": "^1.6",

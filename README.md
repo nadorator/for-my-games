@@ -1,129 +1,135 @@
-# For-My-Games
+# Video Game Content API
 
-> Development environment configuration using Podman with Phalcon 5.8 and PHP 8.2
+A RESTful API for managing video game-related content, built with Phalcon 5.8 and following a microservices architecture with Domain-Driven Design (DDD) principles.
 
-## 📋 Overview
-This project provides a ready-to-use Podman configuration for application development with Phalcon 5.8 and PHP 8.2.
+## Architecture
 
-## 🔧 Prerequisites
-- Podman installed on your system
-- Podman Compose
-- At least 2GB RAM available
-- Port 8909 available (or configurable)
-- Local DNS configuration (see Hosts Configuration section)
+The API is organized into three microservices:
 
-## 🚀 Installation
+1. **User Service**: Manages visitors and editors
+2. **Content Service**: Handles creation, retrieval, and moderation of game-related content
+3. **Auth Service**: Manages JWT issuance and validation
 
-### Initial Setup
-The project uses Podman as a Docker alternative. Default configuration includes:
-- PHP 8.2
-- Phalcon 5.8
-- Apache 2 web server
-- MariaDB (latest stable version)
+## Getting Started
 
-### Hosts Configuration
-You need to configure your local hosts file to map the domains to localhost. Here's how to do it for different operating systems:
+### Prerequisites
 
-#### Linux
-```bash
-sudo nano /etc/hosts
+- Docker and Docker Compose
+- Git
+
+### Installation
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/yourusername/videogamecontent-api.git
+   cd videogamecontent-api
+   ```
+
+2. Create a `.env` file based on the `.env-dummy` template:
+   ```bash
+   cp .env-dummy .env
+   ```
+
+3. Edit the `.env` file with your desired configuration.
+
+4. Start the services:
+   ```bash
+   docker-compose up -d
+   ```
+
+5. The API will be available at:
+   - http://localhost:8909/v1/
+
+## API Endpoints
+
+### User Service
+
+#### Visitor Endpoints (Unauthenticated)
+
+- `POST /v1/visitors`: Register a new visitor
+- `GET /v1/visitors/{visitor_id}`: Retrieve visitor details
+
+#### Editor Endpoints (Authenticated via JWT)
+
+- `GET /v1/editors`: List all editors (admin only)
+- `POST /v1/editors`: Create a new editor (admin only)
+- `DELETE /v1/editors/{editor_id}`: Delete an editor (admin only)
+
+### Auth Service
+
+- `POST /v1/auth/login`: Authenticate an editor and issue a JWT
+- `POST /v1/auth/refresh`: Refresh an existing JWT
+
+### Content Service
+
+#### Game Endpoints (Unauthenticated)
+
+- `GET /v1/games`: List all games
+- `GET /v1/games/{game_id}`: Retrieve a specific game
+- `POST /v1/games`: Create a new game
+
+#### Content Endpoints (Mixed Authentication)
+
+- `POST /v1/contents`: Create a new content item (unauthenticated)
+- `GET /v1/contents/{content_id}`: Retrieve a specific content item (unauthenticated)
+- `PUT /v1/contents/{content_id}`: Update a content item (visitor must match visitor_id)
+- `GET /v1/contents`: List all content items (paginated, authenticated)
+- `PATCH /v1/contents/{content_id}/moderate`: Moderate a content item (authenticated, admin/moderator)
+
+## Authentication
+
+The API uses JWT (JSON Web Tokens) for authentication. To access protected endpoints:
+
+1. Obtain a token via the `/v1/auth/login` endpoint
+2. Include the token in the Authorization header of your requests:
+   ```
+   Authorization: Bearer your-token-here
+   ```
+
+## User Roles
+
+- **Visitors**: Can create, read, and update their own content (unauthenticated but tracked via UUID)
+- **Editors**: Can read all content, moderate it, and manage users (authenticated via JWT)
+  - **Moderator**: Can moderate content
+  - **Admin**: Can moderate content and manage editors
+
+## Content Types
+
+The API supports three types of content:
+
+- **Tests**: Testing information for games
+- **Configurations**: Configuration settings for games
+- **Soluces**: Solutions and guides for games
+
+## Development
+
+### Project Structure
+
 ```
-Add these lines:
-127.0.0.1 www.for-my.games 
-127.0.0.1 api.for-my.games 
-127.0.0.1 admin.for-my.games
-127.0.0.1 phpmyadmin.for-my.games
-
-Save with `CTRL + X`, then `Y`, then `Enter`
-
-#### macOS
-```bash
-sudo nano /private/etc/hosts
-```
-Add these lines:
-127.0.0.1 www.for-my.games
-127.0.0.1 api.for-my.games
-127.0.0.1 admin.for-my.games
-127.0.0.1 phpmyadmin.for-my.games
-Save with `CTRL + X`, then `Y`, then `Enter`
-
-#### Windows
-1. Open Notepad as Administrator
-2. Open file: `C:\Windows\System32\drivers\etc\hosts`
-3. Add these lines:
-   127.0.0.1 www.for-my.games
-   127.0.0.1 api.for-my.games
-   127.0.0.1 admin.for-my.games
-   127.0.0.1 phpmyadmin.for-my.games
-4. Save the file
-
-### File Structure
-
-
-## 💻 Usage
-
-### Starting Containers
-```bash
-podman-compose -f docker-compose.yml up -d
+├── app/
+│   ├── Domain/
+│   │   ├── Model/
+│   │   └── Repository/
+│   ├── Infrastructure/
+│   │   ├── Auth/
+│   │   ├── Database/
+│   │   └── Middleware/
+│   └── Services/
+│       ├── Auth/
+│       ├── Content/
+│       └── User/
+├── docker/
+│   ├── mariadb/
+│   └── nginx/
+├── public/
+│   ├── auth-service.php
+│   ├── content-service.php
+│   └── user-service.php
+├── .env
+├── docker-compose.yml
+└── README.md
 ```
 
-### Accessing Container
-```bash
-podman exec -it api.for-my.games /bin/bash
-```
+## License
 
-### Initialize composer and generate vendors
-```bash
-rm /opt/formygames/src/composer.lock
-rm -Rf /opt/formygames/src/vendor/*
-cd /data && COMPOSER=/opt/formygames/src/composer.json composer install --working-dir=/data --no-progress
-```
-
-### Install phpmyadmin manually from bash
-```bash
-/opt/formygames/src/docker/phpmyadmin.sh
-```
-
-## 🔍 Verifying Installation
-After starting the containers, you can verify that everything is working correctly:
-
-1. Open your browser
-2. Navigate to `http://www.for-my.games:8909`
-3. You should see the Phalcon welcome page
-
-You can also verify the other domains:
-- API: `http://api.for-my.games:8909`
-- Admin: `http://admin.for-my.games:8909`
-- PhpMyAdmin: http://phpmyadmin.for-my.games:8909
-
-## 🛠 Troubleshooting
-
-### Common Issues
-- If containers won't start, check if port 8909 is already in use
-- Check logs with: `podman-compose logs`
-- If domains are not resolving:
-    - Verify your hosts file configuration
-    - Try flushing your DNS cache:
-        - Linux: `sudo systemd-resolve --flush-caches` or `sudo service network-manager restart`
-        - macOS: `sudo killall -HUP mDNSResponder`
-        - Windows: `ipconfig /flushdns` in Command Prompt as Administrator
-- If you can't edit hosts file on Windows:
-    - Make sure you're running Notepad as Administrator
-    - Check if the file is read-only and remove that attribute if needed
-
-## 📝 Notes
-- This configuration is optimized for development
-- Additional security adjustments are required for production
-- The port 8909 can be changed in the docker-compose.yml file if needed
-- Make sure your firewall allows connections to port 8909
-
-## 🤝 Contributing
-Contributions are welcome! Please feel free to:
-1. Fork the project
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
-## 📜 License
-This project is licensed under the [MIT](LICENSE)
+This project is licensed under the MIT License - see the LICENSE file for details.

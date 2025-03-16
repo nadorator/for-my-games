@@ -2,7 +2,7 @@
 version: '3.8'
 
 services:
-  formygames:
+  user-service:
     build:
       context: .
       args:
@@ -10,27 +10,143 @@ services:
         PHALCON_VERSION: 5.8.0
         MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
         ENVIRONMENT: ${ENVIRONMENT:-development}
-    image: api.for-my.games:latest
-    container_name: api.for-my.games
+    image: api.for-my.games:user-service
+    container_name: api.for-my.games-user-service
     ports:
-      - "8909:8909"
+      - "8901:8901"
     volumes:
       - .:/opt/formygames/src:z
       - composer-cache:/root/.composer/cache:z
     environment:
       - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - MYSQL_DATABASE=${MYSQL_DATABASE}
+      - MYSQL_USER=${MYSQL_USER}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
       - ENVIRONMENT=${ENVIRONMENT:-development}
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_EXPIRATION=${JWT_EXPIRATION}
+      - SERVICE_NAME=user-service
+      - SERVICE_PORT=8901
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8909/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:8901/health"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 40s
+    depends_on:
+      - mariadb
+    networks:
+      - formygames-network
+
+  content-service:
+    build:
+      context: .
+      args:
+        PHP_VERSION: 8.2
+        PHALCON_VERSION: 5.8.0
+        MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+        ENVIRONMENT: ${ENVIRONMENT:-development}
+    image: api.for-my.games:content-service
+    container_name: api.for-my.games-content-service
+    ports:
+      - "8902:8902"
+    volumes:
+      - .:/opt/formygames/src:z
+      - composer-cache:/root/.composer/cache:z
+    environment:
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - MYSQL_DATABASE=${MYSQL_DATABASE}
+      - MYSQL_USER=${MYSQL_USER}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+      - ENVIRONMENT=${ENVIRONMENT:-development}
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_EXPIRATION=${JWT_EXPIRATION}
+      - SERVICE_NAME=content-service
+      - SERVICE_PORT=8902
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8902/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    depends_on:
+      - mariadb
+    networks:
+      - formygames-network
+
+  auth-service:
+    build:
+      context: .
+      args:
+        PHP_VERSION: 8.2
+        PHALCON_VERSION: 5.8.0
+        MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+        ENVIRONMENT: ${ENVIRONMENT:-development}
+    image: api.for-my.games:auth-service
+    container_name: api.for-my.games-auth-service
+    ports:
+      - "8903:8903"
+    volumes:
+      - .:/opt/formygames/src:z
+      - composer-cache:/root/.composer/cache:z
+    environment:
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - MYSQL_DATABASE=${MYSQL_DATABASE}
+      - MYSQL_USER=${MYSQL_USER}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+      - ENVIRONMENT=${ENVIRONMENT:-development}
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_EXPIRATION=${JWT_EXPIRATION}
+      - SERVICE_NAME=auth-service
+      - SERVICE_PORT=8903
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8903/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    depends_on:
+      - mariadb
+    networks:
+      - formygames-network
+
+  mariadb:
+    image: mariadb:10.6
+    container_name: api.for-my.games-mariadb
+    environment:
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - MYSQL_DATABASE=${MYSQL_DATABASE}
+      - MYSQL_USER=${MYSQL_USER}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mariadb-data:/var/lib/mysql
+      - ./docker/mariadb/init:/docker-entrypoint-initdb.d
+    networks:
+      - formygames-network
+
+  nginx:
+    image: nginx:alpine
+    container_name: api.for-my.games-nginx
+    ports:
+      - "8909:80"
+    volumes:
+      - ./docker/nginx/conf.d:/etc/nginx/conf.d
+      - ./public:/var/www/html/public
+    depends_on:
+      - user-service
+      - content-service
+      - auth-service
+    networks:
+      - formygames-network
 
 volumes:
   composer-cache:
     driver: local
+  mariadb-data:
+    driver: local
 
 networks:
-  default:
+  formygames-network:
     driver: bridge
